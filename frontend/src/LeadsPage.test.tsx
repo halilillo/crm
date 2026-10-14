@@ -95,7 +95,7 @@ describe("состояние списка заявок в URL", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Новая" }));
     expect(window.location.search).toContain("status=new");
-    expect(screen.getByText("Страница 1 из 3")).toBeTruthy();
+    expect(await screen.findByText("Страница 1 из 3")).toBeTruthy();
 
     window.history.back();
     await waitFor(() => expect(screen.getByText("Страница 2 из 3")).toBeTruthy());
@@ -123,5 +123,41 @@ describe("состояние списка заявок в URL", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Новая" }).className).toContain("active"));
     expect(screen.getByText("Страница 1 из 3")).toBeTruthy();
     expect(window.location.search).toContain("status=new");
+  });
+});
+
+describe("загрузка списка заявок", () => {
+  it("при ошибке показывает сообщение и повтор, но не пустое состояние", async () => {
+    vi.mocked(api.leads).mockRejectedValueOnce(new Error("network error"));
+
+    render(<LeadsPage />);
+
+    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "Не удалось загрузить заявки.");
+    expect(screen.getByRole("button", { name: "Повторить" })).toBeTruthy();
+    expect(screen.queryByText("Заявок нет.")).toBeNull();
+    expect(screen.queryByText("Заявки не найдены")).toBeNull();
+  });
+
+  it("повторно загружает заявки без обновления страницы", async () => {
+    vi.mocked(api.leads).mockRejectedValueOnce(new Error("network error"));
+
+    render(<LeadsPage />);
+    await screen.findByRole("button", { name: "Повторить" });
+    fireEvent.click(screen.getByRole("button", { name: "Повторить" }));
+
+    expect(await screen.findByText("Тест 12")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("Заявок нет.")).toBeNull();
+    expect(api.leads).toHaveBeenCalledTimes(2);
+  });
+
+  it("показывает пустое состояние после успешной загрузки пустого списка", async () => {
+    vi.mocked(api.leads).mockResolvedValue([]);
+
+    render(<LeadsPage />);
+
+    expect(await screen.findByText("Заявок нет.")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Повторить" })).toBeNull();
   });
 });

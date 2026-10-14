@@ -25,3 +25,4 @@ th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eaeef2; }
 .errors { color: #cf222e; font-size: 13px; margin-top: 4px; max-width: 260px; }
 .pagination { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
 .pagination button:disabled { background: #eaeef2; color: #57606a; border-color: #d0d7de; cursor: not-allowed; }
+.load-error { margin-top: 12px; }

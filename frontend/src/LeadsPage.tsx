@@ -16,6 +16,7 @@ export default function LeadsPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState(false);
   const visibleLeads = sortLeads(searchLeads(leads, query), sort);
   const pagination = paginateLeads(visibleLeads, page);
 
@@ -23,10 +24,12 @@ export default function LeadsPage() {
     statuses.find((s) => s.value === status)?.label ?? status;
 
   const loadLeads = useCallback(async (status: LeadStatus | "") => {
+    setLoading(true);
+    setListError(false);
     try {
       setLeads(await api.leads(status || undefined));
     } catch {
-      setMessage({ text: "Не удалось загрузить заявки.", error: true });
+      setListError(true);
     } finally {
       setLoading(false);
     }
@@ -189,7 +192,13 @@ export default function LeadsPage() {
           ))}
         </div>
 
-        <table>
+        {listError && (
+          <div className="load-error">
+            <div className="msg error" role="alert">Не удалось загрузить заявки.</div>
+            <button type="button" onClick={() => loadLeads(filter)}>Повторить</button>
+          </div>
+        )}
+        {!listError && <table>
           <thead>
             <tr>
               <th>Имя</th>
@@ -199,7 +208,7 @@ export default function LeadsPage() {
             </tr>
           </thead>
           <tbody>
-            {pagination.items.map((lead) => (
+            {!loading && pagination.items.map((lead) => (
               <tr key={lead.id}>
                 <td>{lead.name}</td>
                 <td>{lead.phone}</td>
@@ -227,8 +236,8 @@ export default function LeadsPage() {
               </tr>
             )}
           </tbody>
-        </table>
-        {!loading && visibleLeads.length > 0 && (
+        </table>}
+        {!loading && !listError && visibleLeads.length > 0 && (
           <nav className="pagination" aria-label="Страницы заявок">
             <button
               type="button"
